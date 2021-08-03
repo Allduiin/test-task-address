@@ -7,5 +7,5 @@ import test.task.address.model.Location;
 public interface LocationService {
     Location searchAndSave(String address);
 
-    List<String> getAllAddressesByDbCoordinates();
+    List<Location> getAllAddressesByDbCoordinates();
 }

@@ -1,4 +1,4 @@
-package test.task.address.model.mapper;
+package test.task.address.mapper;
 
 import org.springframework.stereotype.Component;
 import test.task.address.model.Coordinates;
@@ -9,8 +9,8 @@ public class CoordinatesMapper {
     public Coordinates getCoordinatesFromCoordinatesResponseDto(
             CoordinatesResponseDto coordinatesResponseDto) {
         Coordinates coordinates = new Coordinates();
-        coordinates.setLatitude(coordinatesResponseDto.getLatitude());
-        coordinates.setLongitude(coordinatesResponseDto.getLongitude());
+        coordinates.setLatitude(coordinatesResponseDto.getLat());
+        coordinates.setLongitude(coordinatesResponseDto.getLon());
         return coordinates;
     }
 }
