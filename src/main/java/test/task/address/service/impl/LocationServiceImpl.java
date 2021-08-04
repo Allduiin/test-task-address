@@ -7,18 +7,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import test.task.address.mapper.LocationMapper;
 import test.task.address.model.Coordinates;
 import test.task.address.model.Location;
-import test.task.address.model.dto.CoordinatesResponseDto;
-import test.task.address.mapper.CoordinatesMapper;
-import test.task.address.model.dto.LocationResponseDto;
 import test.task.address.repository.LocationRepository;
 import test.task.address.service.CoordinatesService;
 import test.task.address.service.LocationService;
@@ -30,7 +26,6 @@ public class LocationServiceImpl implements LocationService {
             = new String[]{"https://nominatim.openstreetmap.org/?addressdetails=1&q=",
             "&format=json&limit=1"};
     private final LocationMapper locationMapper;
-    private final CoordinatesMapper coordinatesMapper;
     private final CoordinatesService coordinatesService;
     private final LocationRepository locationRepository;
 
@@ -54,7 +49,7 @@ public class LocationServiceImpl implements LocationService {
         List<Location> locations = new ArrayList<>();
         for (Coordinates coordinates : allCoordinates) {
             try {
-                locations.addAll(getAddressesByCoordinates(coordinates));
+                locations.add(getLocationByCoordinates(coordinates));
             } catch (URISyntaxException | IOException | InterruptedException e) {
                 throw new RuntimeException("Problem with nominatim reverse method", e);
             }
@@ -69,25 +64,24 @@ public class LocationServiceImpl implements LocationService {
                 .uri(new URI(SEARCH_REQUEST[0] + requestAddress + SEARCH_REQUEST[1]))
                 .GET()
                 .build();
-        String response = HttpClient.newHttpClient()
+        String responseAsString = HttpClient.newHttpClient()
                 .send(request, HttpResponse.BodyHandlers.ofString()).body();
-        CoordinatesResponseDto coordinatesResponseDto =
-                new ObjectMapper().readValue(response, CoordinatesResponseDto.class);
-        return coordinatesMapper.getCoordinatesFromCoordinatesResponseDto(coordinatesResponseDto);
+        JsonNode jsonNode = new ObjectMapper().readTree(responseAsString).get(0);
+        Coordinates coordinates = new Coordinates();
+        coordinates.setLatitude(jsonNode.get("lat").asDouble());
+        coordinates.setLongitude(jsonNode.get("lon").asDouble());
+        return coordinates;
     }
 
-    private List<Location> getAddressesByCoordinates(Coordinates coordinates)throws URISyntaxException, IOException, InterruptedException {
+    private Location getLocationByCoordinates(Coordinates coordinates)throws URISyntaxException, IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("https://nominatim.openstreetmap.org/reverse?format=geojson&lat="
+                .uri(new URI("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat="
                         + coordinates.getLatitude() + "&lon=" + coordinates.getLongitude()))
                 .GET()
                 .build();
         String response = HttpClient.newHttpClient()
                 .send(request, HttpResponse.BodyHandlers.ofString()).body();
-        LocationResponseDto[] locationResponseDtos =
-                new ObjectMapper().readValue(response, LocationResponseDto[].class);
-        return Arrays.stream(locationResponseDtos)
-                .map(locationMapper::getLocationFromLocationResponseDto)
-                .collect(Collectors.toList());
+        JsonNode jsonNode = new ObjectMapper().readValue(response, JsonNode.class);
+        return locationMapper.getLocationFromJsonNode(jsonNode);
     }
 }
