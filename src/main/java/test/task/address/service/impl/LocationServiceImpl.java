@@ -7,9 +7,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -51,7 +49,7 @@ public class LocationServiceImpl implements LocationService {
         List<Location> locations = new ArrayList<>();
         for (Coordinates coordinates : allCoordinates) {
             try {
-                locations.addAll(getAddressesByCoordinates(coordinates));
+                locations.add(getLocationByCoordinates(coordinates));
             } catch (URISyntaxException | IOException | InterruptedException e) {
                 throw new RuntimeException("Problem with nominatim reverse method", e);
             }
@@ -75,18 +73,15 @@ public class LocationServiceImpl implements LocationService {
         return coordinates;
     }
 
-    private List<Location> getAddressesByCoordinates(Coordinates coordinates)throws URISyntaxException, IOException, InterruptedException {
+    private Location getLocationByCoordinates(Coordinates coordinates)throws URISyntaxException, IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("https://nominatim.openstreetmap.org/reverse?format=geojson&lat="
+                .uri(new URI("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat="
                         + coordinates.getLatitude() + "&lon=" + coordinates.getLongitude()))
                 .GET()
                 .build();
         String response = HttpClient.newHttpClient()
                 .send(request, HttpResponse.BodyHandlers.ofString()).body();
-        JsonNode[] jsonNodes =
-                new ObjectMapper().readValue(response, JsonNode[].class);
-        return Arrays.stream(jsonNodes)
-                .map(locationMapper::getLocationFromJsonNode)
-                .collect(Collectors.toList());
+        JsonNode jsonNode = new ObjectMapper().readValue(response, JsonNode.class);
+        return locationMapper.getLocationFromJsonNode(jsonNode);
     }
 }
