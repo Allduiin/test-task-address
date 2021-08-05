@@ -1,5 +1,7 @@
 package test.task.address.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -8,8 +10,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import test.task.address.mapper.LocationMapper;
@@ -24,7 +24,7 @@ import test.task.address.service.LocationService;
 public class LocationServiceImpl implements LocationService {
     private static final String[] SEARCH_REQUEST
             = new String[]{"https://nominatim.openstreetmap.org/?addressdetails=1&q=",
-            "&format=json&limit=1"};
+                "&format=json&limit=1"};
     private final LocationMapper locationMapper;
     private final CoordinatesService coordinatesService;
     private final LocationRepository locationRepository;
@@ -73,7 +73,8 @@ public class LocationServiceImpl implements LocationService {
         return coordinates;
     }
 
-    private Location getLocationByCoordinates(Coordinates coordinates)throws URISyntaxException, IOException, InterruptedException {
+    private Location getLocationByCoordinates(Coordinates coordinates)
+            throws URISyntaxException, IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat="
                         + coordinates.getLatitude() + "&lon=" + coordinates.getLongitude()))
